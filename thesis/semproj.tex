@@ -1,0 +1,343 @@
+% ============================================================
+%  Semestrální projekt
+%  Fakulta elektrotechnická (FEL, F3), ČVUT v Praze
+%  Katedra telekomunikační techniky (K13137)
+% ============================================================
+%  Překlad: latexmk -pdf soubor.tex
+
+% Volby třídy: twoside = oboustranný tisk; dále lze: oneside, draft
+\documentclass[twoside]{ctuthesis}
+\usepackage{multirow}
+\usepackage{array}
+\usepackage{lua-visual-debug}
+\usepackage{tabularx}
+
+\ctusetup{
+	% --- jazyk práce ---------------------------------------
+	mainlanguage   = czech,          % hlavní jazyk textu práce
+	otherlanguages = {english},      % další použité jazyky
+	titlelanguage  = czech,          % jazyk titulní strany
+	% --- typ a zařazení práce ------------------------------
+	doctype = B,                     % B = bakalářská, M = diplomová, D = disertační
+	faculty = F3,                    % F3 = FEL
+	department-czech   = {Katedra telekomunikační techniky},
+	department-english = {Department of Telecommunication Engineering},
+	% --- názvy práce (PŘESNĚ podle zadání z KOS!) ----------
+	title-czech   = {Možnosti spolupráce telefonního systému Asterisk s digitálním radiovým protokolem DMR},
+	title-english = {Options for Integrating the Asterisk Telephony System with the DMR Digital Radio Protocol},
+	% subtitle-czech   = {Podtitul},        % nepovinné
+	% subtitle-english = {Subtitle},        % nepovinné
+	% --- autor a vedoucí -----------------------------------
+	author             = {Adam Barborík},
+	supervisor         = {Ing. Pavel Troller, Csc.},
+	supervisor-address = {Katedra telekomunikační techniky, \\ FEL ČVUT v~Praze, \\ Technická~2, 166~27 Praha~6},
+	% supervisor-specialist = {Jméno konzultanta},  % nepovinné
+	% --- studijní program / specializace -------------------
+	fieldofstudy-czech   = {Softwarové inženýrství a technologie},
+	fieldofstudy-english = {Software Engineering and Technology},
+	% subfieldofstudy-czech   = {Specializace},     % je-li specializace
+	% subfieldofstudy-english = {Specialization},
+	% --- klíčová slova -------------------------------------
+	keywords-czech   = {IP telefonie, Asterisk, DMR, digitální rádio, BrandMeister, VoIP},
+	keywords-english = {IP telephony, Asterisk, DMR, digital radio, BrandMeister, VoIP},
+	% --- datum odevzdání -----------------------------------
+	day = 5, month = 1, year = 2027,
+	% --- zadání z KOS (dvoustránkové PDF) ------------------
+	% specification-file = {zadani.pdf},   % odkomentuj, až budeš mít PDF zadání z KOS
+}
+
+\ctuprocess
+
+% ------------------------------------------------------------
+% Definice "přední" dvousloupcové strany. PRÁVĚ ZDE vznikají ty
+% dva sloupce s barevnou (fakultní) dělicí linkou – týká se jen
+% poděkování, prohlášení, abstraktů, obsahu a seznamu obrázků.
+% Samotné kapitoly jsou jednosloupcové.
+% ------------------------------------------------------------
+\ctutemplateset{maketitle twocolumn default}{
+	\begin{twocolumnfrontmatterpage}
+		\ctutemplate{twocolumn.thanks}
+		\ctutemplate{twocolumn.declaration}
+		\ctutemplate{twocolumn.abstract.in.titlelanguage}
+		\ctutemplate{twocolumn.abstract.in.secondlanguage}
+		\ctutemplate{twocolumn.tableofcontents}
+		\ctutemplate{twocolumn.listoffigures}
+		% \ctutemplate{twocolumn.listoftables}   % chceš-li i seznam tabulek
+	\end{twocolumnfrontmatterpage}
+}
+
+% --- Abstrakt česky -------------------------------------------
+\begin{abstract-czech}
+Sem napiš český abstrakt (jeden odstavec, obvykle 150–300 slov):
+téma a kontext, cíl práce, metodika a data, hlavní výsledky.
+\end{abstract-czech}
+
+% --- Abstrakt anglicky ----------------------------------------
+\begin{abstract-english}
+Write the English abstract here (one paragraph).
+\end{abstract-english}
+
+% --- Poděkování -----------------------------------------------
+\begin{thanks}
+Děkuji vedoucímu práce za \ldots
+\end{thanks}
+
+% --- Prohlášení -----------------------------------------------
+\begin{declaration}
+Prohlašuji, že jsem předloženou práci vypracoval samostatně a~že jsem
+uvedl veškerou použitou literaturu.
+
+V~Praze, \ctufield{day}.~\monthinlanguage{title}~\ctufield{year}
+\end{declaration}
+
+% ==============================================================
+\begin{document}
+
+\maketitle
+%\twocolumn
+
+\chapter{Vývoj a současný stav digitální rádiové komunikace}
+
+Radioamatérská služba patří mezi nejstarší oblasti využití rádiového spektra. Od vynálezu bezdrátového telegrafu je prostorem pro experimentování
+a technické vzdělávání, které ovšem podléhá řadě omezení a regulací, viz kapitola \hyperref[chap:regule]{\ref*{chap:regule} \nameref*{chap:regule}}.
+Kromě amatérů je značná část spektra vyhrazená pro komerční nebo profesionální použití. Jak v profesionální tak amatérské sféře je trendem už několik
+desítek let přechod od analogu k digitálním hlasovým módům. Ač mají analogové systémy stále svoje využití, praxe ukazuje, že digitální rádiové sítě
+jsou spolehlivější, škálovatelnější a koncové radiostanice dokáží být operované i méně zkušeným radistou.
+
+Myšlenka přenášet informaci rádiem v~digitální podobě je stejně stará jako rádio samo. Radiotelegrafie využívající Morseovu abecedu je v~podstatě
+digitálním přenosem, neboť vysílač pouze zapíná a vypíná nosnou vlnu, a~přenáší tak dva diskrétní stavy. Hlasová komunikace se však po většinu
+20.~století opírala výhradně o~analogové modulace AM a~FM. Digitální přenos dat se v~rádiovém provozu prosadil nejprve v~podobě dálnopisného provozu
+RTTY a~v~80.~letech také paketového rádia založeného na protokolu AX.25. Přenos digitalizované řeči se stal prakticky použitelným až v~90.~letech,
+kdy rozvoj číslicového zpracování signálu umožnil kompresi řeči do datových toků v~řádu jednotek kbit/s. V~této době vznikly první profesionální systémy
+určené zejména pro bezpečnostní a~záchranné složky, jako jsou Tetrapol nebo TETRA. Po roce 2000 se objevily levnější úzkopásmové standardy DMR, dPMR
+a~NXDN určené pro širší okruh komerčních uživatelů. Ve stejném období začali vlastní digitální módy využívat i~radioamatéři, nejprve D-STAR a~později
+System Fusion, a~hojně přebírají také profesionální standard DMR. Většina uvedených systémů však spoléhá na proprietární hlasové kodeky rodiny AMBE, což vedlo
+ke vzniku zcela otevřeného protokolu M17 s~kodekem Codec~2. Současným trendem v~profesionální sféře je přechod na širokopásmové sítě LTE a~5G se službami pro
+kritickou komunikaci (MCPTT), které úzkopásmové systémy postupně doplňují. Přehled vybraných standardů uvádí tabulka~\ref{tab:digi-standardy}.
+
+\begin{table}[H]
+\centering
+\small
+\caption{Přehled vybraných standardů digitální hlasové rádiové komunikace}
+\label{tab:digi-standardy}
+\begin{tabular}{@{}l c l l l l@{}}
+\toprule
+\textbf{Standard} & \textbf{Rok} & \textbf{Přístup} & \textbf{Šířka kanálu} & \textbf{Modulace} & \textbf{Kodek} \\
+\midrule
+\multicolumn{6}{@{}l}{\textit{Profesionální systémy}} \\
+\addlinespace[2pt]
+Tetrapol        & 1992 & FDMA           & 12,5 kHz    & GMSK          & proprietární \\
+TETRA           & 1995 & TDMA (4 sloty) & 25 kHz      & $\pi/4$-DQPSK & ACELP \\
+APCO P25        & 1995 & FDMA           & 12,5 kHz    & C4FM          & IMBE \\
+DMR             & 2005 & TDMA (2 sloty) & 12,5 kHz    & 4FSK          & AMBE+2 \\
+dPMR            & 2006 & FDMA           & 6,25 kHz    & 4FSK          & AMBE+2 \\
+NXDN            & 2006 & FDMA           & 6,25 kHz    & 4FSK          & AMBE+2 \\
+LTE/5G MCPTT    & 2016 & OFDMA          & 1,4--20 MHz & QPSK/QAM      & AMR-WB \\
+\midrule
+\multicolumn{6}{@{}l}{\textit{Radioamatérské systémy}} \\
+\addlinespace[2pt]
+D-STAR          & 2001 & FDMA           & 6,25 kHz    & GMSK          & AMBE \\
+System Fusion   & 2013 & FDMA           & 12,5 kHz    & C4FM          & AMBE+2 \\
+M17             & 2019 & FDMA           & 9 kHz       & 4FSK          & Codec 2 \\
+\bottomrule
+\end{tabular}
+\medskip
+\begin{minipage}{0.9\linewidth}
+\smallskip
+\footnotesize
+Pozn.: Rok udává vydání standardu, případně uvedení prvních zařízení či sítí do provozu.
+Kodeky AMBE, AMBE+2 a~IMBE jsou proprietární kodeky, Codec~2 je otevřený.
+Vokodér systému Tetrapol je typu RP-CELP, ve specifikaci se nazývá jednoduše
+\uv{Tetrapol Vocoder}, protože byl specifikován pouze pro účely systému.
+\end{minipage}
+\end{table}
+
+Velký užitek nachází digitální radiokomunikace například v koordinaci složek integrovaného záchranného systému, kde plní klíčovou roli pro jejich správné fungování.
+V ČR vedle sebe funguje hned několik rádiových sítí používaných různými složkami IZS. Tou nejvýznamnější u nás je celostátní síť PEGAS postavená na technologii Tetrapol
+a~provozovaná českou poštou pro potřeby ministerstva vnitra, která funguje jako páteřní síť IZS, ke které se ostatní sítě připojují. Je zapojená do všech operačních
+středisek policie, hasičů a ZZS. Další celostátní sítí je Analogová rádio síť (ARS) HZS ČR. Ta slouží jako záložní síť hasičských jednotek k síti PEGAS.
+Dále kromě pagerů a LTE, které jsou provozované soukromníky, jsou všechny sítě pouze na regionální úrovni.
+
+\begin{table}[H]
+\newcolumntype{P}[1]{>{\raggedright\arraybackslash}p{#1}}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\centering
+\small
+\renewcommand{\arraystretch}{1.2}
+\setlength{\tabcolsep}{5pt}
+\newlength{\oblastw}\settowidth{\oblastw}{Jihomoravský}
+\caption{Přehled vybraných rádiových sítí IZS}
+\label{tab:site-izs}
+\begin{tabularx}{\textwidth}{@{} P{\oblastw} L L L P{0.15\textwidth} @{}}
+\toprule
+\textbf{Oblast} & \textbf{Síť / technologie} & \textbf{Kdo ji používá} & \textbf{Detail} & \textbf{Stav} \\
+\midrule
+Celá ČR & \textbf{PEGAS}\newline(Tetrapol)
+  & PČR, HZS, ZZS, AČR, ČEPS a~další menší složky IZS
+  & Páteřní síť IZS
+  & V~provozu\newline od r.~1995 \\
+\addlinespace
+Celá ČR & \textbf{ARS HZS ČR}\newline(analogová radiová síť)
+  & HZS ČR a~jednotky SDH obcí a~podniků
+  & Úzkopásmová FM se selektivní volbou ZVEI-1
+  & V~provozu\newline od r.~2004, první pokusy od 50.~let \\
+\addlinespace
+Celá ČR & \textbf{Pagerové sítě}
+  & SDH a~ZZS
+  & Jednosměrný přenos čísel a~textu, svolávání jednotek
+  & V~provozu \\
+\addlinespace
+Celá ČR & \textbf{Veřejné mobilní sítě}\newline(LTE/5G)
+  & Všechny složky IZS
+  & Datové služby, které úzkopásmový PEGAS nezvládá
+  & V~provozu \\
+\addlinespace
+Praha & \textbf{Městský rádiový systém (MRS)}\newline(TETRA)
+  & Městská policie, Dopravní podnik a~Technická správa komunikací
+  & Součinnost účastníků v~rámci města
+  & V~provozu\newline od r.~2000 \\
+\addlinespace
+Liberecký kraj & \textbf{DMR síť ZZS LK}\newline(DMR)
+  & ZZS Libereckého kraje
+  & Převaděče hlavně v~horském terénu, kde PEGAS nemá pokrytí
+  & V~provozu \\
+\addlinespace
+Brno & \textbf{TETRA síť MP~Brno}\newline(TETRA)
+  & Městská policie Brno
+  & Běží vedle PEGASu a~DMR sítě ZZS JmK
+  & V~provozu \\
+\addlinespace
+Jihomoravský kraj & \textbf{DMR síť ZZS JmK}\newline(DMR)
+  & ZZS Jihomoravského kraje
+  & DMR Tier~II, šifrování ARC4 (40~bitů)
+  & V~provozu \\
+\addlinespace
+Břeclav, Znojmo, Blansko & \textbf{DMR sítě MP}\newline(DMR)
+  & Městské policie Břeclav, Znojmo a~Blansko
+  & DMR Tier~II, radiostanice s~GPS a~datovými službami
+  & V~provozu \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+% --- DMR
+\chapter{Standard DMR}
+
+Systém DMR vznikl jako otevřený standard Evropského institutu pro telekomunikační normy (ETSI) určený především pro profesionální mobilní rádiové sítě.
+Mezi radioamatéry se rozšířil díky dostupnosti levných ručních stanic a převaděčů a díky možnosti propojovat převaděče a uživatele po celém světě prostřednictvím internetu.
+Právě propojení převaděčů s IP infrastrukturou otevírá prosto pro spolupráci s dalšími komunikačními systémy, včetně IP telefonie.
+
+\section{Úrovně standardu (Tier I-III)}
+Standard DMR rozlišuje celkem 3 úrovně, označované jako \textit{Tier I}, \textit{Tier II} a \textit{Tier III}.
+Úrovně se liší zamýšleným nasazením, licencováním a složitostí síťové architektury.
+Všechny však vycházejí ze společného rádiového rozhraní.
+
+
+\textit{Tier I} je určen pro bezlicenční provoz v pásmu 446 MHz jako digitální ekvivalent analogových radiostanic PMR (Personal Mobile Radio).
+Zařízení této úrovně pracují s nízkým vyzářeným výkonem (0.5W), omezeným počtem kanálů a striktně bez převaděčů.
+Komunikace probíhá přímo mezi stanicemi v režimu point to point a provoz hovoru běží kontinuálně po jednom kanálu o šířce pásma 12.5 kHz. 
+
+
+\textit{Tier II} je nejrozšířeněji používanou úrovní standardu a bude také předmětem této práce. Pokrývá nasazení v licencovaných pásmech VHF a UHF ($\sim$30 MHz - $\sim$1 GHz).
+Využívá dvouslotový časový multiplex (TDMA) v kanálu o šířce 12.5 kHz, díky tomu lze na jednom kmitočtu vést dva nezávislé hovory.  Tier II podporuje provoz přes převaděče,
+skupinová i individuální volání, krátké textové zprávy a paketová data.
+
+
+\textit{Tier III} rozšiřuje Tier II o trunkový provoz. Rádiové kanály v systému nejsou pevně přiřazeny skupinám uživatelů, ale jsou přidělovány dynamicky podle potřeby.
+Řízení zajišťuje vyhrazený řídicí kanál, přes který se stanice registrují do sítě a žádají o přidělení provozního kanálu.
+Tento přístup umožňuje efektivně obsloužit velký počet uživatelů s omezeným počtem kmitočtů a podporuje rozsáhlé sítě s více základnovými stanicemi.
+
+\section{Fyzická vrstva a přístup k médiu}
+Pro přenos informace používá DMR čtyřstavovou frekvenční modulaci 4FSK, kde každý symbol nese 2 bity informace. Modulační rychlost je 4800 symbolů (Baudů) za vteřinu,
+což činí teoretickou přenosovou rychlost 9600 bitů/s. Frekvenční skoky od středu kanálu jsou zaznamenány v následující tabulce:
+
+\begin{table}[htbp]
+\shorthandoff{-}
+\centering
+\caption{Mapování symbolů a bitů na odchylky modulace}
+\label{tab:dibit}
+\begin{tabular}{|c|c|c|c|}
+\hline
+\multicolumn{2}{|c|}{\textbf{Informace}} & \multirow{2}{*}{\textbf{Symbol}} & \multirow{2}{*}{\textbf{4FSK frekvenční odchylka [kHz]}} \\
+\cline{1-2}
+\textbf{Bit 1} & \textbf{Bit 0} & & \\
+\hline
+0 & 1 & $+3$ & $+1{,}944$ kHz \\
+\hline
+0 & 0 & $+1$ & $+0{,}648$ kHz \\
+\hline
+1 & 0 & $-1$ & $-0{,}648$ kHz \\
+\hline
+1 & 1 & $-3$ & $-1{,}944$ kHz \\
+\hline
+\end{tabular}
+\end{table}
+
+Šířka jednoho kanálu je 12,5 kHz, kde jeden kanál může obsloužit dva uživatele současně díky dvouslotovému časovému multiplexu TDMA
+(Time Division Multiple Access). Střída (duty cycle) stanice je tak pouze 50\%, což má za následek vyšší energetickou efektivitu.
+
+\section{Struktura rámců a signalizace}
+\ldots
+
+\section{Hlasové služby}
+\ldots
+
+\section{Adresace a typy volání}
+\ldots
+
+\section{Hlasový kodek AMBE+2}
+\ldots
+
+\section{Datové služby}
+\ldots
+
+% --- ASTERISK
+\chapter{Telefonní sítě a Asterisk}
+\ldots
+
+% --- NÁVRH
+\chapter{Návrh řešení spolupráce systému Asterisk s protokolem DMR}
+\ldots
+
+\section{Existující řešení propojení telefonie a rádia}
+\ldots
+
+\section{Síť BrandMeister}
+\ldots
+
+\subsection{Homebrew repeater protokol}
+\ldots
+
+\chapter{Regulatorní a etický rámec}
+\label{chap:regule}
+Tady chci napsat něco o ČTÚ a jeho regulacích na pásmech kde se DMR provozuje.
+Dále etiku implementace takového mostu i přes výslovný zákaz autorů sítě BrandMeister o přemosťování komunikace mezi sítěmi.
+Možná něco o uzavřenosti AMBE kodeku pokud se to nebude opakovat s tím co bude v kapitole o AMBE kodeku.
+
+% --- IMPLEMENTACE
+%\chapter{Implementace řešení}
+%\ldots
+
+% --- TESTOVÁNÍ
+%\chapter{Testování a výsledky}
+%\ldots
+
+% --- ZÁVĚR
+\chapter{Závěr}
+\ldots
+
+% --- Seznam použitých zdrojů ----------------------------------
+% Kostra používá BibTeX (funguje out-of-the-box). Pro citace dle
+% ČSN ISO 690 (což FEL/telekom obvykle chce) zvaž místo toho balíček
+% biblatex se stylem iso-numeric nebo iso-authoryear.
+\bibliographystyle{amsalpha}
+\bibliography{literatura}        % zdroje v souboru literatura.bib
+
+% --- Přílohy --------------------------------------------------
+\appendix
+% \printindex                    % rejstřík, používáš-li jej
+
+% --- Vložení zadání z KOS jako kapitolu -----------------------
+% \ctutemplate{specification.as.chapter}   % odkomentuj spolu se specification-file
+
+\end{document}
